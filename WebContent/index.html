@@ -1,0 +1,338 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SmartParking</title>
+<link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="css/jquery.mobile-1.1.1.css" />
+<link href="css/bootstrap.min.css" rel="stylesheet" media="screen">
+<link href="css/calender/jqm-datebox.min.css" rel="stylesheet" />
+<link href="css/bootstrap-datetimepicker.min.css" rel="stylesheet"
+	media="screen">
+<link rel="stylesheet" type="text/css" href="css/DateTimePicker.css" />
+<script type="text/javascript" src="js/jquery_1.7_min.js"></script>
+<script type="text/javascript" src="js/jquery.mobile-1.1.0.min.js"></script>
+<script type="text/javascript" src="fusionCharts/FusionCharts.js"></script>
+<script type="text/javascript"
+	src="fusionCharts/FusionCharts.jqueryplugin.js"></script>
+<script type="text/javascript" src="js/DateTimePicker.js"></script>
+<script type="text/javascript" src="js/bootstrap.min.js"></script>
+<script type="text/javascript" src="js/bootstrap-datetimepicker.js"
+	charset="UTF-8"></script>
+<script type="text/javascript" src="js/bootstrap-datetimepicker.fr.js"
+	charset="UTF-8"></script>
+<script type="text/javascript" src="js/urlconfig.js"></script>
+<script type="text/javascript">
+	var timeArray = [];
+	var occStatusArray_1 = [];
+	var occStatusArray_2 = [];
+	var occStatusArray_3 = [];
+	var strXml_1 = "";
+	var strXml_2 = "";
+	var strXml_3 = "";
+	
+	$(document).ready(function() {
+
+						prepareData(10);
+						$("#dtBox").DateTimePicker();
+						var currentTime = new Date()
+						var date = currentTime.getDate();
+						var month = currentTime.getMonth() + 1;
+						var year = currentTime.getFullYear();
+						var setdate = date + "-" + month + "-" + year;
+						$('#startdate').val(setdate);
+						setInterval( function() {
+									$.ajax({
+										url : 'http://10.211.53.31:8080/SmartParkingWS/smartParking/ParkingSlotWS/displayParkingOccupancyStatus',
+										type : 'GET',
+										crossDomain : true,
+										success : function(data) {
+											var parkingStatus = eval(data);
+											console.log(parkingStatus);
+											for (i = 0; i < 3; i++) {
+												$("#p_" + [ i ]).html("P"+ parkingStatus[i].slotId);
+														if (parkingStatus[i].occupiedStatus == false) {
+															
+															$("#green_"+[i]).addClass('active');
+															$("#red_" +[i]).removeClass('active');
+															$("#status_"+[i]).html("Vacant");
+
+														} else {
+
+															$("#red_" + [ i ]).addClass('active');
+															$("#green_" + [ i ]).removeClass('active');
+															$("#status_"+ [ i ]).html("Occupied")
+														}
+													}
+												}
+											}); //End of ajax call
+								}, 2000);
+						displayTable();
+
+						$("#startdate").bind("change", function() {
+							displayTable();
+						});
+					}); //End of document ready function
+
+	function displayTable() {
+		
+		$("#slot_1").html("P1");
+		$("#slot_2").html("P2");
+		$("#slot_3").html("P3");
+		var startTime = document.getElementById("startdate").value;
+		var startTimePeriod = formatDate(startTime);
+		
+		occStatusArray_1 = [];
+		occStatusArray_2 = [];
+		occStatusArray_3 = [];
+		
+		for(m = 0; m < timeArray.length;m++ ){
+			occStatusArray_1.push("0");
+			occStatusArray_2.push("0");
+			occStatusArray_3.push("0");
+		}
+		
+		$.ajax({
+			url : 'http://10.211.53.31:8080/SmartParkingWS/smartParking/ParkingHistoryWS/displayParkingHistoryByStartTime/'+startTimePeriod,
+			type : 'GET',
+			crossDomain : true,
+			success : function(data) {
+				var parkingHistory = eval(data);
+				console.log(parkingHistory);
+					for (i = 0; i < parkingHistory.length; i++) {
+	
+							var stTime = new Date(parkingHistory[i].startTime);
+							var enTime = new Date(parkingHistory[i].endTime);
+							var occStatus = parkingHistory[i].tSlot_Id.occupiedStatus;
+
+							var res = makeTimeIntervals(stTime, enTime,
+									occStatus);
+
+							var index = timeArray.indexOf(res);
+
+							if (parkingHistory[i].tSlot_Id.slotId == 1) {
+								occStatusArray_1[index] = "1";
+							} else if (parkingHistory[i].tSlot_Id.slotId == 2) {
+								occStatusArray_2[index] = "1";
+							} else if (parkingHistory[i].tSlot_Id.slotId == 3) {
+								occStatusArray_3[index] = "1";
+							}
+						}
+
+						displayGraph();
+					}
+
+				}); //End of ajax call
+	}
+
+	function formatDate(stime) {
+		
+		var start = stime.split(" ");
+		var time = start[0].split("-");
+		var date = time[0];
+		var month = time[1];
+		var year = time[2];
+		var startTimePeriod = year + "-" + month + "-" + date;
+		return startTimePeriod;
+		
+	}
+
+	function prepareData(interval) {
+
+		for (i = 0; i < 24; i++) {
+			for (j = 0; j < 51; j++) {
+				timeArray.push(i + ":" + j);
+				j = j + (interval - 1);
+			}
+		}
+	}
+
+	function displayGraph() {
+		
+		strXml_1 = "<chart showValues='0' showLabels='0' plotGradientColor=' ' showYAxisValues='0' showPlotBorder = '1' plotBorderColor='0174DF' showBorder='0' bgColor='FFFFFF' numDivLines='0' canvasBgColor='FFFFFF' canvasBorderThickness='0' canvasBorderColor='#FFFFFF' showDivLineValues='0'>";
+		strXml_2 = "<chart showValues='0' showLabels='0' plotGradientColor=' ' showYAxisValues='0' showPlotBorder = '1' plotBorderColor='0174DF' showBorder='0' bgColor='FFFFFF' numDivLines='0' canvasBgColor='FFFFFF' canvasBorderThickness='0' canvasBorderColor='#FFFFFF' showDivLineValues='0'>";
+		strXml_3 = "<chart showValues='0' showLabels='0' plotGradientColor=' ' showYAxisValues='0' showPlotBorder = '1' plotBorderColor='0174DF' showBorder='0' bgColor='FFFFFF' numDivLines='0' canvasBgColor='FFFFFF' canvasBorderThickness='0' canvasBorderColor='#FFFFFF' showDivLineValues='0'>";
+
+		for (k = 0; k < timeArray.length; k++) {
+			strXml_1 += "<set label='"+timeArray[k]+"'"+" "+"color='0174DF' value='"+occStatusArray_1[k]+"'/>";
+			strXml_2 += "<set label='"+timeArray[k]+"'"+" "+"color='0174DF' value='"+occStatusArray_2[k]+"'/>";
+			strXml_3 += "<set label='"+timeArray[k]+"'"+" "+"color='0174DF' value='"+occStatusArray_3[k]+"'/>";
+		}
+		strXml_1 += "</chart>";
+		strXml_2 += "</chart>";
+		strXml_3 += "</chart>";
+
+		var myChart = new FusionCharts("fusionCharts/Column2D.swf", "my_1"+Math.random(),
+				"960", "45", "0", "1");
+		myChart.setXMLData(strXml_1);
+		myChart.render("chart_div_1");
+		var myChart_1 = new FusionCharts("fusionCharts/Column2D.swf", "my_2"+Math.random(),
+				"960", "45", "0", "1");
+		myChart_1.setXMLData(strXml_2);
+		myChart_1.render("chart_div_2");
+		var myChart_2 = new FusionCharts("fusionCharts/Column2D.swf", "my_3"+Math.random(),
+				"960", "45", "0", "1");
+		myChart_2.setXMLData(strXml_3);
+		myChart_2.render("chart_div_3");
+		
+		
+	}
+
+	function makeTimeIntervals(startTime, endTime, oStatus) {
+
+		var startMinute = 10 * Math.round(startTime.getMinutes() / 10);
+		var endMinute = 10 * Math.round(endTime.getMinutes() / 10);
+		startTime = startTime.getHours() + ":" + startMinute;
+		endTime = endTime.getHours() + ":" + endMinute;
+
+		return startTime;
+
+	}
+</script>
+</head>
+<body>
+	<div data-role="page" id="page_wrapper">
+		<div id="site_wrapper">
+			<div data-role="header" id="header_wrapper">
+				<img id="header_background" src="css/images/SmartParking Header.png">
+			</div>
+			<div data-role="content" id="content_wrapper">
+				<div id="parking_zone">
+					<table border="1px" data-role="table" id="parking_status"
+						data-mode="reflow"
+						style="width: 50%; margin-top: 2%; margin-bottom: 2%; margin-left: 25%;">
+						<thead>
+							<tr>
+								<th
+									style="text-align: center; height: 50px; font-size: 12pt; font-family: candara; color: #010003">Parking Slot
+									</th>
+								<th
+									style="text-align: center; height: 50px; font-size: 12pt; font-family: candara; color: #010003">Occupancy
+									Indicator</th>
+								<th
+									style="text-align: center; height: 50px; font-size: 12pt; font-family: candara; color: #010003">Occupancy
+									Message</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td style="text-align: center;"><label id="p_0"
+									style="font-family: candara bold;"></label></td>
+								<td>
+									<div id="light" style="margin-left: 22%;">
+										<span id="red_0"></span> <span id="green_0"></span>
+									</div>
+								</td>
+								<td style="text-align: center;"><label id="status_0"></label></td>
+							</tr>
+							<tr>
+								<td style="text-align: center;"><label id="p_1"
+									style="font-family: candara bold;"></label></td>
+								<td>
+									<div id="light" style="margin-left: 22%;">
+										<span id="red_1"></span> <span id="green_1"></span>
+									</div>
+								</td>
+								<td style="text-align: center;"><label id="status_1"></label></td>
+							</tr>
+							<tr>
+								<td style="text-align: center;"><label id="p_2"
+									style="font-family: candara bold;"></label></td>
+								<td>
+									<div id="light" style="margin-left: 22%;">
+										<span id="red_2"></span> <span id="green_2"></span>
+									</div>
+								</td>
+								<td style="text-align: center;"><label id="status_2"></label></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<div id="time_selection_div">
+					<div style="float: left; margin-left: 33%;">
+						<br> <Label>Select Date</Label> <input type="text"
+							id="startdate" size="20" data-field="date" readonly
+							style="margin-top: -17%; margin-left: 48%; width: 55%; height: 30px">
+					</div>
+				</div>
+				<div id="dtBox"></div>
+
+				<div id="div_table">
+					<table data-role="table" id="catalog_table" data-mode="reflow"
+						class="catalog_table ui-responsive">
+						<thead>
+							<tr>
+								<th rowspan="2"
+									style="width: 10%; text-align: center; background-color: #e1e0d8; color: #0978c2; font-size: 12pt; font-family: candara; height: 40px;">Slot No
+									</th>
+								<th colspan="6"
+									style="width: 100%; text-align: center; background-color: #e1e0d8; color: #0978c2; font-size: 12pt; font-family: cabdara; height: 40px;">
+									Slot Occupancy Status</th>
+
+
+							</tr>
+							<tr>
+								<th
+									style="width: 16.66%; text-align: center; background-color: #e1e0d8; color: #0978c2; font-size: 12pt; font-family: cabdara; height: 40px;">
+									0-4</th>
+								<th
+									style="width: 16.66%; text-align: center; background-color: #e1e0d8; color: #0978c2; font-size: 12pt; font-family: cabdara; height: 40px;">
+									4-8</th>
+								<th
+									style="width: 16.66%; text-align: center; background-color: #e1e0d8; color: #0978c2; font-size: 12pt; font-family: cabdara; height: 40px;">
+									8-12</th>
+								<th
+									style="width: 16.66%; text-align: center; background-color: #e1e0d8; color: #0978c2; font-size: 12pt; font-family: cabdara; height: 40px;">
+									12-16</th>
+								<th
+									style="width: 16.66%; text-align: center; background-color: #e1e0d8; color: #0978c2; font-size: 12pt; font-family: cabdara; height: 40px;">
+									16-20</th>
+								<th
+									style="width: 16.66%; text-align: center; background-color: #e1e0d8; color: #0978c2; font-size: 12pt; font-family: cabdara; height: 40px;">
+									20-24</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td align="center"><label id="slot_1"></label></td>
+								<td colspan='6'>
+									<div id="chart_div_1" style="height: 44px;"></div>
+								</td>
+
+							</tr>
+
+							<tr>
+								<td align="center"><label id="slot_2"></label></td>
+								<td colspan='6'>
+									<div id="chart_div_2" style="height: 44px;"></div>
+								</td>
+
+							</tr>
+
+							<tr>
+								<td align="center"><label id="slot_3"></label></td>
+								<td colspan='6'>
+									<div id="chart_div_3" style="height: 44px;"></div>
+								</td>
+
+							</tr>
+
+						</tbody>
+					</table>
+				</div>
+			</div>
+			<!--Newly Added-->
+			<div>
+				<p> This has been added to test git </p>
+			</div>
+			<div id="footer_wrapper" data-position="fixed" style="width: 81%;">
+				<img src="css/images/Footer.png" width="100%" />
+			</div>
+		</div>
+		<!-- End of site wrapper -->
+	</div>
+	<!-- End of page wrapper -->
+</body>
+</html>
+
