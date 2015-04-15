@@ -1,8 +1,28 @@
 <html>
 	<head>
+	<link rel="stylesheet" href="css/style.css" />
+	<link rel="stylesheet" href="css/jquery.mobile-1.1.1.css" />
+	<link href="css/bootstrap.min.css" rel="stylesheet" media="screen">
+	<link href="css/calender/jqm-datebox.min.css" rel="stylesheet" />
+	<link href="css/bootstrap-datetimepicker.min.css" rel="stylesheet"
+		media="screen">
+	<link rel="stylesheet" type="text/css" href="css/DateTimePicker.css" />
+	<script type="text/javascript" src="js/jquery_1.7_min.js"></script>
+	<script type="text/javascript" src="js/jquery.mobile-1.1.0.min.js"></script>
+	<script type="text/javascript">
+		$(document).ready(function(){
+			alert("DOM Loaded");
+			$('#btn').click(function(){
+				alert("button click success");
+			})
+		});
+		
+	</script>
 	</head>
 	<body>
 		<h2>This is about page</h2>
 		<h3> This file is edited for new branch</h3>
+		<button id="btn" value="submit">submit</button>
+		
 	</body>
 </html>
